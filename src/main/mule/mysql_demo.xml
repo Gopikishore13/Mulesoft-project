@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="407a88d2-c0e5-4df8-8cc8-5e62214f4418" >
+		
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="384e1291-a70d-4db4-865f-f2cc733c4e77" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Gopikishore13" database="empdb" />
+	</db:config>
+	<flow name="mysql_demoFlow" doc:id="bf037f6e-aece-4a57-bf09-4e3f6512d436" >
+		<http:listener doc:name=" EMP Listener" doc:id="2a2af0a2-ce98-4000-9ac4-6e4f43f5fa91" path="/Employee" allowedMethods="GET" config-ref="HTTP_Listener_config"/>
+		<db:select doc:name="Select" doc:id="0d7edfeb-ba9f-4b29-b3ad-1b020711082b" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM emp_data;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="526627a5-2649-491f-af78-258f6f3225bf" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="GET_Flow1" doc:id="344fc22b-4d00-4ac9-9bd5-be404629dbd5" >
+		<http:listener doc:name="Listener" doc:id="f9db6dd2-0e21-4536-9bd7-a08940c53a03" config-ref="HTTP_Listener_config" path="/Employee/{Emp_id}" allowedMethods="GET"/>
+		<db:select doc:name="GET" doc:id="35e6d8c5-c156-45f1-a7e0-2d9c19f1b19f" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM emp_data  Where Emp_Id = :Emp_id;
+]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Emp_id: attributes.uriParams.Emp_id
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="51468926-026c-452a-8c75-ff386d8f8491" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="post_Flow2" doc:id="82d0e778-c69e-4cbd-b4c0-700b580992c1" >
+		<http:listener doc:name="Listener" doc:id="e2fc5d30-cee5-4036-b4e2-5d5030647864" config-ref="HTTP_Listener_config" path="/Employee" allowedMethods="POST"/>
+		<db:insert doc:name="Insert" doc:id="229a32eb-001f-49de-90d6-65acadd4c0ac" config-ref="Database_Config">
+			<db:sql ><![CDATA[Insert into  empdb.emp_data ( Emp_name, Emp_id, Emp_designation)values( :Emp_name, :Emp_id, :Emp_designation);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+   Emp_name: payload.Emp_name,
+   Emp_id: payload.Emp_id,
+   Emp_designation: payload.Emp_designation  
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="bf2d5862-bceb-4464-bae9-715aa902278b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="PATCH_Flow3" doc:id="fce47be3-a38d-4e89-9331-6be3e6014240" >
+		<http:listener doc:name="Listener" doc:id="feb7297a-0686-4999-a814-680245e28411" config-ref="HTTP_Listener_config" path="/Employee" allowedMethods="PATCH"/>
+		<db:update doc:name="PATCH" doc:id="09f89167-b5da-43d8-9e8e-3d56189c8f60" config-ref="Database_Config">
+			<db:sql ><![CDATA[Update emp_data set Emp_name= :Emp_name where Emp_id= :Emp_id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Emp_name:payload.Emp_name,
+	Emp_id:payload.Emp_id
+}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="a38f47b6-75ea-45ee-b13b-9cbba90c0142" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="Delete_Flow4" doc:id="f9acc67b-56d6-4c52-84c7-6b8dba9758ec" >
+		<http:listener doc:name="Listener" doc:id="eb58e403-ad91-4414-bc6a-452ee3f27e7a" config-ref="HTTP_Listener_config" allowedMethods="DELETE" path="/Employee/{Emp_id}"/>
+		<db:delete doc:name="Delete" doc:id="28494d7b-fa7f-4638-b577-122033b0deec" config-ref="Database_Config">
+			<db:sql ><![CDATA[Delete from emp_data Where Emp_id=:Emp_id;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Emp_id: attributes.uriParams.Emp_id
+}]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform doc:name="Transform Message" doc:id="3fb4dd62-c6df-4870-8608-66ac56e7168a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="PUT_Flow5" doc:id="a1f17b04-422a-496f-af5f-513bc1904054" >
+		<http:listener doc:name="Listener" doc:id="ac3458e3-f733-4f1d-a9f2-a001e53fa71d" config-ref="HTTP_Listener_config" allowedMethods="PUT" path="/Employee"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="505ede58-96c0-452c-ab5d-0a8b4e7c657e" variableName="vInputPayload"/>
+		<db:select doc:name="Select" doc:id="a6cf5c4e-5816-43e2-8111-e1995a2cfddc" config-ref="Database_Config">
+			<db:sql ><![CDATA[Select Emp_id from emp_data where Emp_id=:Emp_id;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Emp_id: vars.vInputPayload.Emp_id
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="881eeca3-e908-4655-b396-6a999a6f0b29" >
+			<when expression="#[payload.Emp_id != null]">
+				<db:update doc:name="Update" doc:id="c1981013-02a7-4a8f-873f-cf1332efb69f" config-ref="Database_Config">
+					<db:sql ><![CDATA[Update emp_data set Emp_name= :Emp_name where Emp_id= :Emp_id]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Emp_id: vars.vInputPayload.Emp_id,
+	Emp_name: vars.vInputPayload.Emp_name
+}]]]></db:input-parameters>
+				</db:update>
+			</when>
+			<otherwise >
+				<db:insert doc:name="Insert" doc:id="fc22b4b0-c013-43a2-84c8-2500e793f562" config-ref="Database_Config">
+					<db:sql ><![CDATA[Insert into  emp_data ( Emp_name, Emp_id)values( :Emp_name, :Emp_id);]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Emp_id: vars.vInputPayload.Emp_id,
+	Emp_name: vars.vInputPayload.Emp_name
+}]]]></db:input-parameters>
+				</db:insert>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="0d56c40c-f043-45bb-972f-1e1f264fe1a9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
